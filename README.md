@@ -4,6 +4,8 @@
 
 !pip install ultralytics
 
+#fornimage 
+
 from ultralytics import YOLO
 
 model = YOLO("yolov8n.pt")
@@ -18,6 +20,61 @@ results.show()
 results.save(filename="output.jpg")
 
 print("✅ Object detection complete! Saved as output.jpg")
+
+
+#for webcam
+# save as yolov8_webcam.py
+import cv2
+from ultralytics import YOLO
+import time
+
+# load model (downloads automatically if missing)
+model = YOLO("yolov8n.pt")  # change to yolov8s.pt for more accuracy
+
+cap = cv2.VideoCapture(0)  # change index if needed
+if not cap.isOpened():
+    raise RuntimeError("Cannot open webcam")
+
+fps_time = time.time()
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # run inference (returns a Results object or list)
+    results = model(frame, conf=0.25, verbose=False)  # single-frame inference
+    r = results[0]  # first result
+
+    # r.boxes contains detections; each box has xyxy + conf + cls
+    if hasattr(r, "boxes") and r.boxes is not None:
+        for box in r.boxes:
+            xyxy = box.xyxy[0].cpu().numpy()          # [x1,y1,x2,y2]
+            conf = float(box.conf[0].cpu().numpy())
+            cls_id = int(box.cls[0].cpu().numpy())
+            label = model.names[cls_id] if hasattr(model, "names") else str(cls_id)
+            x1, y1, x2, y2 = map(int, xyxy)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0,255,0), 2)
+            cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1-6),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
+
+    # display FPS
+    fps = 1.0 / (time.time() - fps_time)
+    fps_time = time.time()
+    cv2.putText(frame, f"FPS: {fps:.1f}", (10,30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,0,0), 2)
+
+    cv2.imshow("YOLOv8 Webcam", frame)
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
+        break
+    if key == ord("s"):
+        # save snapshot
+        cv2.imwrite(f"snapshot_{int(time.time())}.jpg", frame)
+        print("Snapshot saved")
+
+cap.release()
+cv2.destroyAllWindows()
+
 
 
 Q1. What is YOLO?
