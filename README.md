@@ -1,3 +1,95 @@
+
+# Install the required libraries
+#!pip install opencv-python ultralytics ipython
+import cv2
+from ultralytics import YOLO
+# model = YOLO('yolov8n.pt')
+model = YOLO('yolov8m.pt')
+# --- Initialize Webcam ---
+try:
+ # Open a connection to the default camera (camera index 0)
+ cap = cv2.VideoCapture(0)
+ if not cap.isOpened():
+ raise IOError("Cannot open webcam. Please check if it is connected 
+except Exception as e:
+ print(f"Error: {e}")
+ exit()
+# Set a preferred camera resolution
+cap.set(3, 1280) # Width
+cap.set(4, 7
+ 20) # Height
+# A set to store all unique object classes detected during the session
+all_detected_objects = set()
+print("Starting live detection... Press 'q' in the display window to quit."
+# --- Main Loop for Detection ---
+while True:
+ # Read a frame from the camera
+ success, frame = cap.read()
+ if not success:
+ print("Failed to grab a frame. Exiting...")
+ break
+ # Perform object detection on the current frame
+ results = model(frame)
+ 
+# Iterate over the detected objects in the current frame
+ for result in results:
+ boxes = result.boxes
+ for box in boxes:
+ # Get class ID and name
+ class_id = int(box.cls[0])
+ class_name = model.names[class_id]
+ # Add the detected class name to our master set
+ all_detected_objects.add(class_name)
+ # --- Visualization ---
+ # Get confidence score and coordinates
+ confidence = float(box.conf[0])
+ x1, y1, x2, y2 = map(int, box.xyxy[0])
+ 
+# Draw the bounding box on the frame
+ cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+ # Create the label text
+ label = f'{class_name} {confidence:.2f}'
+ # Put the label on the bounding box
+ cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPL
+ 
+# Display the resulting frame in a window named 'Live Object Detection'
+ cv2.imshow('Live Object Detection', frame)
+ # Check if the 'q' key is pressed. If yes, break the loop.
+ # cv2.waitKey(1) waits 1ms for a key event. & 0xFF is a standard mask.
+ if cv2.waitKey(1) & 0xFF == ord('q'):
+ break
+ 
+# --- Cleanup and Final Report ---
+print("\nDetection stopped by user.")
+# Release the camera and destroy all OpenCV windows
+cap.release()
+cv2.destroyAllWindows()
+# Print the final list of all unique objects detected during the session
+if all_detected_objects:
+ print("\n--- Summary of All Unique Objects Detected ---")
+ # Sort the list alphabetically for clean output
+ for i, obj in enumerate(sorted(list(all_detected_objects)), 1):
+ print(f"{i}. {obj}")
+ print("--------------------------------------------")
+else:
+ print("\nNo objects were detected during the session.")
+
+
+
+
+
+
+
+
+yashika👇🏻
+
+
+
+
+
+
+
+
 # yolo
 
 
